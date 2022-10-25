@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ordersapi
+
+  Sample SAM Template for ordersapi
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Runtime: java11
+    Architectures:
+      - x86_64
+    MemorySize: 512
+    Timeout: 30
+    Environment:
+      Variables:
+        ORDERS_TABLE: !Ref OrdersTable
+
+Resources:
+  OrdersTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: Number
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ordersapi
+      Handler: org.example.CreateOrderLambda::createOrder
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        OrderEvents:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: POST
+  ReadOrdersFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ordersapi
+      Handler: org.example.ReadOrdersLambda::getOrders
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        OrderEvents:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: GET
+
+Outputs:
+  CreateOrdersAPI:
+    Description: "API endpoint URL for create an order"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/orders"
+  CreateOrderFunction:
+    Description: "Create Order Lambda Function ARN"
+    Value: !GetAtt CreateOrderFunction.Arn
+  CreateOrderFunctionIamRole:
+    Description: "Create Order Lambda Function IAM Role ARN"
+    Value: !GetAtt CreateOrderFunctionRole.Arn
+  ReadOrdersAPI:
+    Description: "API endpoint URL for get orders"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/orders"
+  ReadOrdersFunction:
+    Description: "Get Orders Lambda Function ARN"
+    Value: !GetAtt ReadOrdersFunction.Arn
+  ReadOrdersFunctionIamRole:
+    Description: "Get Orders Lambda Function IAM Role ARN"
+    Value: !GetAtt ReadOrdersFunctionRole.Arn
